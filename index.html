@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TreeRadar v5 (Dec 12, 2025) by @spacebanana12 on GitHub -->
+<!-- TreeRadar v5.0.1 (Dec 12, 2025) by @spacebanana12 on GitHub -->
 <html>
 <head>
     <title>TreeRadar</title>
@@ -859,15 +859,21 @@
             
             sbDebugBtn.addEventListener('click', () => { debugInput.click(); closeSidebar(); });
             debugInput.addEventListener('change', handleDebugUpload);
+            
             pillInfoBtn.addEventListener('click', () => {
                 if (!activeSiteIdForData || !activeRadarProductCode) return;
-                const siteData = allRadarSitesData.find(site => site.properties.id.toLowerCase() === activeSiteIdForData);
-                if (!siteData) return;
-                const stationType = siteData.properties.stationType;
-                let newProduct = null;
-                if (['sr_bref', 'bref1', 'brefl'].includes(activeRadarProductCode)) { newProduct = (stationType === 'TDWR') ? 'bvel' : 'sr_bvel'; }
-                else { newProduct = (stationType === 'TDWR') ? 'bref1' : 'sr_bref'; }
-                if (newProduct) toggleRadarProduct(activeSiteIdForData, newProduct);
+                const site = allRadarSitesData.find(s => s.properties.id.toLowerCase() === activeSiteIdForData);
+                if (!site) return;
+                const type = site.properties.stationType;
+                let next;
+                if (type === 'TDWR') {
+                    if (activeRadarProductCode === 'bref1') next = 'brefl';
+                    else if (activeRadarProductCode === 'brefl') next = 'bvel';
+                    else next = 'bref1';
+                } else {
+                    next = (activeRadarProductCode === 'sr_bref') ? 'sr_bvel' : 'sr_bref';
+                }
+                toggleRadarProduct(activeSiteIdForData, next);
             });
 
             const fullAlertOverlay = document.createElement('div');
@@ -1183,8 +1189,10 @@
             const pillIdTime = document.getElementById('pill-id-time');
             const pillProduct = document.getElementById('pill-product');
             pillIdTime.innerText = stationId.toUpperCase();
-            let productLabel = (['sr_bvel', 'bvel'].includes(productCode)) ? "Velocity" : "Reflectivity";
-            pillProduct.innerText = productLabel;
+            let label = "Reflectivity";
+            if (productCode.includes('vel')) label = "Velocity";
+            else if (productCode === 'brefl') label = "LR Reflectivity";
+            pillProduct.innerText = label;
             document.getElementById('radar-info-pill').style.display = 'flex';
         }
         async function updateAlerts() {
@@ -1434,7 +1442,7 @@
                 if (nearest) {
                     const type = nearest.properties.stationType;
                     const id = nearest.properties.id.toLowerCase();
-                    let prod = (activeRadarProductCode && (activeRadarProductCode.includes('vel'))) ? (type === 'TDWR' ? 'bvel' : 'sr_bvel') : (type === 'TDWR' ? 'bref1' : 'sr_bref');
+                    let prod = (activeRadarProductCode && activeRadarProductCode.includes('vel')) ? (type === 'TDWR' ? 'bvel' : 'sr_bvel') : (activeRadarProductCode === 'brefl' && type === 'TDWR') ? 'brefl' : (type === 'TDWR' ? 'bref1' : 'sr_bref');
                     map.flyTo({ center: nearest.geometry.coordinates, zoom: 7, essential: true });
                     toggleRadarProduct(id, prod);
                 }
@@ -1449,8 +1457,9 @@
                 const site = allRadarSitesData.find(s => s.properties.id === top.properties.id);
                 if (site && !site.properties.isOffline) {
                     const id = site.properties.id.toLowerCase();
+                    const type = site.properties.stationType;
                     if (activeSiteIdForData === id) { removeSingleSiteLayer(); activeRadarProductCode = activeSiteIdForData = null; updateMosaicVisibility(); if (window.saveCurrentState) window.saveCurrentState(); return; }
-                    let prod = (activeRadarProductCode && activeRadarProductCode.includes('vel')) ? (site.properties.stationType === 'TDWR' ? 'bvel' : 'sr_bvel') : (site.properties.stationType === 'TDWR' ? 'bref1' : 'sr_bref');
+                    let prod = (activeRadarProductCode && activeRadarProductCode.includes('vel')) ? (type === 'TDWR' ? 'bvel' : 'sr_bvel') : (activeRadarProductCode === 'brefl' && type === 'TDWR') ? 'brefl' : (type === 'TDWR' ? 'bref1' : 'sr_bref');
                     toggleRadarProduct(id, prod);
                 }
             } else {
@@ -1467,8 +1476,8 @@
         [layerIds.alertsZone, layerIds.alertsPolygon, layerIds.radarSites, ...allSpcLayerIds].forEach(l => { map.on('mouseenter', l, ptr); map.on('mouseleave', l, def); });
         document.addEventListener('keydown', (e) => {
             if (!e.shiftKey) return;
-            const map = { 'KeyM': 'sidebar-mosaic-btn', 'KeyA': 'sidebar-alerts-btn', 'KeyS': 'sidebar-sites-btn' };
-            if (map[e.code]) { document.getElementById(map[e.code]).click(); showToast(`${e.code.slice(3)} Toggle`); }
+            const mapKeys = { 'KeyM': 'sidebar-mosaic-btn', 'KeyA': 'sidebar-alerts-btn', 'KeyS': 'sidebar-sites-btn' };
+            if (mapKeys[e.code]) { document.getElementById(mapKeys[e.code]).click(); showToast(`${e.code.slice(3)} Toggle`); }
             else if (e.code === 'Backquote') { activeSpcDay = activeSpcType = 'none'; updateSpcLayerVisibility(); if (window.saveCurrentState) window.saveCurrentState(); showToast('Outlook: None'); }
             else if (e.code.startsWith('Digit')) handleOutlookShortcut(e.code.slice(5));
             if (activeSiteIdForData) {
