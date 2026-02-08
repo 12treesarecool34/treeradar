@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TreeRadar v5_fixed.0.1 (Jan 05, 2026) by @thatfrog12 on GitHub -->
+<!-- TreeRadar v6.0.0 (Feb 08, 2026) by @thatfrog12 on GitHub -->
 <html>
 <head>
     <title>TreeRadar</title>
@@ -614,6 +614,13 @@
                     </div>
                     <div class="toggle-switch-ui" id="fly-settings-toggle-ui"></div>
                 </button>
+                <button class="settings-item" id="zone-alerts-settings-btn">
+                    <div class="sidebar-item-content">
+                        <i class="material-symbols-rounded">grid_view</i>
+                        Zone Alerts
+                    </div>
+                    <div class="toggle-switch-ui active" id="zone-alerts-settings-toggle-ui"></div>
+                </button>
                 <div class="settings-category-header">App</div>
                 <div class="settings-splitter"></div>
                 <button class="settings-item" id="save-settings-btn">
@@ -661,12 +668,15 @@
         let activeSiteIdForData = null;
         let activeRadarProductCode = null;
         let flyToRadarSetting = false;
+        let zoneAlertsEnabled = true;
         const radarSiteDefaultColor = ['case', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080'];
         document.addEventListener('DOMContentLoaded', () => {
             const saveSettingsBtn = document.getElementById('save-settings-btn');
             const saveSettingsToggleUI = document.getElementById('save-settings-toggle-ui');
             const flySettingsBtn = document.getElementById('fly-settings-btn');
             const flySettingsToggleUI = document.getElementById('fly-settings-toggle-ui');
+            const zoneAlertsBtn = document.getElementById('zone-alerts-settings-btn');
+            const zoneAlertsToggleUI = document.getElementById('zone-alerts-settings-toggle-ui');
             const radarToggle = document.getElementById('radar-toggle');
             const alertsToggle = document.getElementById('alerts-toggle');
             const sitesToggle = document.getElementById('radar-sites-toggle');
@@ -682,6 +692,16 @@
                 activeRadarProductCode = localStorage.getItem('activeProduct');
                 radarSiteSelectionMode = localStorage.getItem('siteSelection') || 'Both';
                 flyToRadarSetting = localStorage.getItem('flyToRadar') === 'true';
+                if (localStorage.getItem('zoneAlertsVisible') === 'false') {
+                    zoneAlertsEnabled = false;
+                    zoneAlertsToggleUI.classList.remove('active');
+                } else {
+                    zoneAlertsEnabled = true;
+                    zoneAlertsToggleUI.classList.add('active');
+                }
+            } else {
+                zoneAlertsEnabled = true;
+                zoneAlertsToggleUI.classList.add('active');
             }
             if (flyToRadarSetting) flySettingsToggleUI.classList.add('active');
             function saveCurrentState() {
@@ -695,6 +715,7 @@
                     localStorage.setItem('activeProduct', activeRadarProductCode || "");
                     localStorage.setItem('siteSelection', radarSiteSelectionMode);
                     localStorage.setItem('flyToRadar', flyToRadarSetting);
+                    localStorage.setItem('zoneAlertsVisible', zoneAlertsEnabled);
                 }
             }
             saveSettingsBtn.addEventListener('click', () => {
@@ -714,6 +735,29 @@
                 flyToRadarSetting = !flyToRadarSetting;
                 flySettingsToggleUI.classList.toggle('active');
                 saveCurrentState();
+            });
+            zoneAlertsBtn.addEventListener('click', () => {
+                zoneAlertsEnabled = !zoneAlertsEnabled;
+                zoneAlertsToggleUI.classList.toggle('active');
+                saveCurrentState();
+                if (zoneAlertsEnabled) {
+                    showToast("Zone Alerts: On");
+                    updateAlerts();
+                } else {
+                    showToast("Zone Alerts: Off");
+                    if (map.getSource('alerts-zone')) map.getSource('alerts-zone').setData({ type: 'FeatureCollection', features: [] });
+                    globalZoneAlerts = [];
+                    alertQueue = alertQueue.filter(item => item.feature.properties.geometryType !== 'zone');
+                    activeAlertFlashes.forEach((value, key) => {
+                        if (value.type === 'zone') {
+                            clearTimeout(value.timeoutId);
+                            if (map.getLayer(value.borderHighlightId)) map.removeLayer(value.borderHighlightId);
+                            if (map.getLayer(value.highlightId)) map.removeLayer(value.highlightId);
+                            if (map.getSource(value.highlightId)) map.removeSource(value.highlightId);
+                            activeAlertFlashes.delete(key);
+                        }
+                    });
+                }
             });
             document.getElementById('alert-popup-container').addEventListener('contextmenu', disableContextMenu);
             document.getElementById('attribution-bubble').addEventListener('contextmenu', disableContextMenu);
@@ -858,13 +902,13 @@
             }
             const highlightId = 'highlight-' + alertId + '-' + now, borderHighlightId = highlightId + '-border';
             map.addSource(highlightId, { 'type': 'geojson', 'data': feature });
-            map.addLayer({ 'id': highlightId, 'type': 'fill', 'source': highlightId, 'paint': { 'fill-color': '#ffffff', 'fill-opacity': 0, 'fill-opacity-transition': { duration: 450 } } });
+            map.addLayer({ 'id': highlightId, 'type': 'fill', 'source': highlightId, 'paint': { 'fill-opacity': 0, 'fill-opacity-transition': { duration: 450 } } });
             map.addLayer({ 'id': borderHighlightId, 'type': 'line', 'source': highlightId, 'paint': { 'line-color': '#ffffff', 'line-width': 2, 'line-opacity': 0, 'line-opacity-transition': { duration: 450 } } });
             const setOpacity = (f, l) => { if (map.getLayer(highlightId)) map.setPaintProperty(highlightId, 'fill-opacity', f); if (map.getLayer(borderHighlightId)) map.setPaintProperty(borderHighlightId, 'line-opacity', l); };
             const count = Math.floor(duration / 2000);
             for (let i = 0; i < count; i++) { setTimeout(() => setOpacity(0.25, 0.9), i * 2000); setTimeout(() => setOpacity(0, 0), i * 2000 + 1000); }
             const timeoutId = setTimeout(() => { if (map.getLayer(borderHighlightId)) map.removeLayer(borderHighlightId); if (map.getLayer(highlightId)) map.removeLayer(highlightId); if (map.getSource(highlightId)) map.removeSource(highlightId); activeAlertFlashes.delete(alertId); }, duration + 500);
-            activeAlertFlashes.set(alertId, { timeoutId, endTime: now + duration + 500, highlightId, borderHighlightId });
+            activeAlertFlashes.set(alertId, { timeoutId, endTime: now + duration + 500, highlightId, borderHighlightId, type: feature.properties.geometryType });
         }
         function flyToAlert(feature) {
             if (!feature || !feature.geometry || !feature.geometry.coordinates) return;
@@ -895,13 +939,31 @@
             setTimeout(() => { popup.classList.remove('fly-in'); popup.classList.add('fly-out'); }, 7000);
             setTimeout(() => { popup.remove(); if (source === 'new') { setTimeout(() => { isDisplayingAlert = false; displayNextAlert(); }, 1000); } }, 7500);
         }
-        function displayNextAlert() { if (isDisplayingAlert || alertQueue.length === 0) return; isDisplayingAlert = true; const { feature } = alertQueue.shift(); flashAlertOnMap(feature, 10000); createAndShowAlertPopup(feature, 'new'); }
+        function displayNextAlert() { 
+            if (isDisplayingAlert || alertQueue.length === 0) return; 
+            const nextItem = alertQueue[0];
+            if (nextItem.feature.properties.geometryType === 'zone' && !zoneAlertsEnabled) {
+                alertQueue.shift(); 
+                displayNextAlert();
+                return;
+            }
+            isDisplayingAlert = true; 
+            const { feature } = alertQueue.shift(); 
+            flashAlertOnMap(feature, 10000); 
+            createAndShowAlertPopup(feature, 'new'); 
+        }
         function addNewAlertsToQueue(features, type) { if (!features) return; features.forEach(f => { if (!seenAlerts.has(f.properties.id)) { seenAlerts.add(f.properties.id); if (!isInitialLoad) alertQueue.push({ feature: f, type }); } }); if (!isInitialLoad) displayNextAlert(); }
         async function processRawAlertFeatures(raw) {
             const valid = raw.filter(isValidAlert), poly = [], zone = [];
             valid.forEach(f => { f.properties.specificEventName = getSpecificAlertName(f.properties); if (f.geometry) { f.properties.geometryType = 'polygon'; poly.push(f); } else zone.push(f); });
             if (map.getSource('alerts-poly')) map.getSource('alerts-poly').setData({ type: 'FeatureCollection', features: poly });
-            globalPolyAlerts = poly; addNewAlertsToQueue(poly, 'alert'); await processZoneAlerts(zone);
+            globalPolyAlerts = poly; addNewAlertsToQueue(poly, 'alert'); 
+            if (zoneAlertsEnabled) {
+                await processZoneAlerts(zone);
+            } else {
+                if (map.getSource('alerts-zone')) map.getSource('alerts-zone').setData({ type: 'FeatureCollection', features: [] });
+                globalZoneAlerts = [];
+            }
         }
         function handleDebugUpload(e) {
             const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
@@ -1021,7 +1083,15 @@
                 } else { title = `SPC Day ${activeSpcDay} Outlook`; color = props.fill || '#FFFFFF'; tags += `<p><strong>Risk:</strong> ${formatSpcLabel(props.LABEL || props.LABEL2)}</p>`; }
                 div.style.borderTop = `5px solid ${hexToRgba(color, 0.5)}`; let pager = (currentStackedAlertsOnMap.length > 1) ? `<div class="alert-pager">${currentStackedAlertsOnMap.map((_, i) => `<div class="pager-dot ${i === currentStackedAlertIndex ? 'active' : ''}" data-index="${i}"></div>`).join('')}</div>` : '';
                 div.innerHTML = `<h4>${title}</h4><div class="popup-content-area">${tags}<ul><li><button id="full-text-button">Full Text</button></li></ul></div>${pager}`;
-                div.querySelector('#full-text-button').onclick = () => item.type === 'alert' ? showFullAlertTextPopup(item.feature) : showFullSpcTextPopup(item);
+                const fullTextBtn = div.querySelector('#full-text-button');
+                fullTextBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (item.type === 'alert') {
+                        showFullAlertTextPopup(item.feature);
+                    } else {
+                        showFullSpcTextPopup(item);
+                    }
+                });
                 div.querySelectorAll('.pager-dot').forEach(d => d.onclick = (e) => { currentStackedAlertIndex = parseInt(e.target.dataset.index); update(); });
             }; update(); currentMapPopup = new maplibregl.Popup({ closeOnClick: true, closeButton: false, anchor: 'bottom', className: 'custom-map-popup-container' }).setLngLat(clicked).setDOMContent(div).addTo(map);
         }
@@ -1104,6 +1174,7 @@
             if (!e.shiftKey) return;
             const keys = { 'KeyM': ['sidebar-mosaic-btn', 'radar-toggle', 'Mosaic'], 'KeyA': ['sidebar-alerts-btn', 'alerts-toggle', 'Alerts'], 'KeyS': ['sidebar-sites-btn', 'radar-sites-toggle', 'Sites'] };
             if (keys[e.code]) { document.getElementById(keys[e.code][0]).click(); const chk = document.getElementById(keys[e.code][1]); showToast(`${keys[e.code][2]}: ${chk.checked ? 'On' : 'Off'}`); }
+            else if (e.code === 'KeyZ') { document.getElementById('zone-alerts-settings-btn').click(); }
             else if (e.code === 'Backquote') { activeSpcDay = activeSpcType = 'none'; updateSpcLayerVisibility(); if (window.saveCurrentState) window.saveCurrentState(); showToast('Outlook: Off'); }
             else if (e.code.startsWith('Digit')) handleOutlookShortcut(e.code.slice(5));
             if (activeSiteIdForData) {
