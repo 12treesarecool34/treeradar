@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TreeRadar v6.2.0 (Feb 20, 2026) -->
+<!-- TreeRadar v6.2.2 (Feb 20, 2026) -->
 <html>
 <head>
     <title>TreeRadar</title>
@@ -639,10 +639,10 @@
         <input type="checkbox" id="radar-sites-toggle" checked>
     </div>
     <script>
-        console.log("[TreeRadar v6.2.0] Initializing application...");
+        console.log("[TreeRadar v6.2.2] System mounting...");
 
         function disableContextMenu(event) {
-            console.debug("[TreeRadar] UI interaction: Context menu suppressed.");
+            console.debug("[TreeRadar] UI: Suppressing default context menu.");
             event.stopPropagation();
             event.preventDefault();
         }
@@ -650,14 +650,14 @@
         function toggleSidebarDropdown(id, btnElement) {
             const dropdown = document.getElementById(id);
             if (dropdown) {
-                console.log(`[TreeRadar] Sidebar: Toggling dropdown visibility for container: ${id}`);
+                console.log(`[TreeRadar] Sidebar: Toggling dropdown visibility for component ${id}`);
                 dropdown.classList.toggle('show');
                 btnElement.classList.toggle('active');
             }
         }
 
         function showToast(message) {
-            console.log(`[TreeRadar] Notification: ${message}`);
+            console.log(`[TreeRadar] UI Notification: ${message}`);
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = 'toast-notification';
@@ -688,10 +688,10 @@
         let flyToRadarSetting = false;
         let zoneAlertsEnabled = true;
         let alertsEnabled = true; 
-        const radarSiteDefaultColor = ['case', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080'];
+        const radarSiteDefaultColor = ['case', ['==', ['get', 'statusError'], true], '#8800FF', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080'];
         
         document.addEventListener('DOMContentLoaded', () => {
-            console.log("[TreeRadar] Lifecycle: DOMContentLoaded - Attaching UI listeners.");
+            console.log("[TreeRadar] Lifecycle: DOMContentLoaded. Configuring interactive elements.");
             const saveSettingsBtn = document.getElementById('save-settings-btn');
             const saveSettingsToggleUI = document.getElementById('save-settings-toggle-ui');
             const flySettingsBtn = document.getElementById('fly-settings-btn');
@@ -702,8 +702,9 @@
             const sitesToggle = document.getElementById('radar-sites-toggle');
             
             const savedSettingsState = localStorage.getItem('saveSettings');
+            console.log(`[TreeRadar] Persistence: Storage state detected as ${savedSettingsState}`);
+
             if (savedSettingsState === 'true') {
-                console.log("[TreeRadar] Persistence: Loading state from LocalStorage.");
                 saveSettingsToggleUI.classList.add('active');
                 if (localStorage.getItem('radarVisible') === 'false') radarToggle.checked = false;
                 if (localStorage.getItem('sitesVisible') === 'false') sitesToggle.checked = false;
@@ -721,13 +722,17 @@
                     zoneAlertsEnabled = true;
                     zoneAlertsToggleUI.classList.add('active');
                 }
+                console.log("[TreeRadar] Persistence: Restored previous application state from local storage.");
+            } else {
+                zoneAlertsEnabled = true;
+                zoneAlertsToggleUI.classList.add('active');
             }
 
             if (flyToRadarSetting) flySettingsToggleUI.classList.add('active');
 
             function saveCurrentState() {
                 if (localStorage.getItem('saveSettings') === 'true') {
-                    console.debug("[TreeRadar] Persistence: Updating LocalStorage entries...");
+                    console.debug("[TreeRadar] Persistence: Serializing current state to local storage.");
                     localStorage.setItem('radarVisible', radarToggle.checked);
                     localStorage.setItem('sitesVisible', sitesToggle.checked);
                     localStorage.setItem('alertsVisible', alertsEnabled);
@@ -744,13 +749,13 @@
 
             saveSettingsBtn.addEventListener('click', () => {
                 if (saveSettingsToggleUI.classList.contains('active')) {
-                    console.warn("[TreeRadar] Settings: Disabling persistence. Clearing LocalStorage.");
+                    console.warn("[TreeRadar] Settings: Persistence disabled. Purging local storage and refreshing.");
                     saveSettingsToggleUI.classList.remove('active');
                     localStorage.clear();
                     document.cookie.split(";").forEach(function(c) { document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); });
                     location.reload(); 
                 } else {
-                    console.log("[TreeRadar] Settings: Enabling persistence.");
+                    console.log("[TreeRadar] Settings: Persistence enabled.");
                     saveSettingsToggleUI.classList.add('active');
                     localStorage.setItem('saveSettings', 'true');
                     saveCurrentState();
@@ -767,7 +772,7 @@
 
             zoneAlertsBtn.addEventListener('click', () => {
                 zoneAlertsEnabled = !zoneAlertsEnabled;
-                console.log(`[TreeRadar] Settings: ZoneAlerts toggled to ${zoneAlertsEnabled}`);
+                console.log(`[TreeRadar] Settings: ZoneAlerts state changed to ${zoneAlertsEnabled}`);
                 zoneAlertsToggleUI.classList.toggle('active');
                 saveCurrentState();
                 if (zoneAlertsEnabled && alertsEnabled) {
@@ -807,14 +812,14 @@
             sidebar.addEventListener('contextmenu', disableContextMenu);
             menuBtn.addEventListener('contextmenu', disableContextMenu);
 
-            function openSidebar() { console.log("[TreeRadar] Sidebar: Open."); sidebar.classList.add('open'); sidebarOverlay.style.display = 'block'; }
-            function closeSidebar() { console.log("[TreeRadar] Sidebar: Close."); sidebar.classList.remove('open'); sidebarOverlay.style.display = 'none'; document.querySelectorAll('.sidebar-dropdown-container.show').forEach(el => { el.classList.remove('show'); }); document.querySelectorAll('.sidebar-menu-item.active').forEach(el => { el.classList.remove('active'); }); document.querySelectorAll('.settings-item.active').forEach(el => { el.classList.remove('active'); }); }
+            function openSidebar() { console.log("[TreeRadar] UI: Opening sidebar."); sidebar.classList.add('open'); sidebarOverlay.style.display = 'block'; }
+            function closeSidebar() { console.log("[TreeRadar] UI: Closing sidebar."); sidebar.classList.remove('open'); sidebarOverlay.style.display = 'none'; document.querySelectorAll('.sidebar-dropdown-container.show').forEach(el => { el.classList.remove('show'); }); document.querySelectorAll('.sidebar-menu-item.active').forEach(el => { el.classList.remove('active'); }); document.querySelectorAll('.settings-item.active').forEach(el => { el.classList.remove('active'); }); }
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); openSidebar(); });
             closeBtn.addEventListener('click', closeSidebar);
             sidebarOverlay.addEventListener('click', closeSidebar);
-            sbMosaicBtn.addEventListener('click', () => { radarToggle.checked = !radarToggle.checked; updateMosaicVisibility(); saveCurrentState(); });
+            sbMosaicBtn.addEventListener('click', () => { radarToggle.checked = !radarToggle.checked; console.log(`[TreeRadar] Overlay: Mosaic radar toggled to ${radarToggle.checked}`); updateMosaicVisibility(); saveCurrentState(); });
             sbAlertsBtn.addEventListener('click', () => { toggleAllAlerts(); });
-            sbSitesBtn.addEventListener('click', () => { sitesToggle.checked = !sitesToggle.checked; if (map.getLayer(layerIds.radarSites)) map.setLayoutProperty(layerIds.radarSites, 'visibility', sitesToggle.checked ? 'visible' : 'none'); saveCurrentState(); });
+            sbSitesBtn.addEventListener('click', () => { sitesToggle.checked = !sitesToggle.checked; console.log(`[TreeRadar] Overlay: Radar site icons toggled to ${sitesToggle.checked}`); if (map.getLayer(layerIds.radarSites)) map.setLayoutProperty(layerIds.radarSites, 'visibility', sitesToggle.checked ? 'visible' : 'none'); saveCurrentState(); });
             sbSettingsBtn.addEventListener('click', () => { closeSidebar(); settingsOverlay.style.display = 'flex'; });
             settingsCloseBtn.addEventListener('click', () => { settingsOverlay.style.display = 'none'; });
             settingsOverlay.addEventListener('click', (e) => { if (e.target === settingsOverlay) settingsOverlay.style.display = 'none'; });
@@ -824,7 +829,7 @@
             siteSelectOptions.forEach(option => {
                 option.addEventListener('click', () => {
                     radarSiteSelectionMode = option.dataset.value;
-                    console.log(`[TreeRadar] Settings: SiteSelectionMode changed to ${radarSiteSelectionMode}`);
+                    console.log(`[TreeRadar] Filter: Radar site filtering set to ${radarSiteSelectionMode}`);
                     showToast(`Site Selection: ${radarSiteSelectionMode}`);
                     siteSelectOptions.forEach(opt => opt.style.background = 'transparent');
                     option.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -833,7 +838,7 @@
             });
 
             const sidebarOutlookBtns = document.querySelectorAll('.sidebar-menu-item.outlook-type');
-            sidebarOutlookBtns.forEach(btn => { btn.addEventListener('click', () => { activeSpcDay = btn.dataset.day; activeSpcType = btn.dataset.type; console.log(`[TreeRadar] Sidebar: Activating SPC Layer - Day ${activeSpcDay}, Type ${activeSpcType}`); updateSpcLayerVisibility(); saveCurrentState(); closeSidebar(); }); });
+            sidebarOutlookBtns.forEach(btn => { btn.addEventListener('click', () => { activeSpcDay = btn.dataset.day; activeSpcType = btn.dataset.type; console.log(`[TreeRadar] Overlay: Activating SPC Day ${activeSpcDay} Product: ${activeSpcType}`); updateSpcLayerVisibility(); saveCurrentState(); closeSidebar(); }); });
             sbDebugBtn.addEventListener('click', () => { debugInput.click(); closeSidebar(); });
             debugInput.addEventListener('change', handleDebugUpload);
 
@@ -848,7 +853,7 @@
                     else if (activeRadarProductCode === 'brefl') next = 'bvel';
                     else next = 'bref1';
                 } else { next = (activeRadarProductCode === 'sr_bref') ? 'sr_bvel' : 'sr_bref'; }
-                console.log(`[TreeRadar] UI: Radar Pill clicked. Cycling from ${activeRadarProductCode} to ${next}`);
+                console.log(`[TreeRadar] Logic: Cycling single-site product from ${activeRadarProductCode} to ${next} for ${activeSiteIdForData}`);
                 toggleRadarProduct(activeSiteIdForData, next);
             });
 
@@ -974,7 +979,7 @@
                 else { clearTimeout(existingFlash.timeoutId); if (map.getLayer(existingFlash.borderHighlightId)) map.removeLayer(existingFlash.borderHighlightId); if (map.getLayer(existingFlash.highlightId)) map.removeLayer(existingFlash.highlightId); if (map.getSource(existingFlash.highlightId)) map.removeSource(existingFlash.highlightId); activeAlertFlashes.delete(alertId); }
             }
             const highlightId = 'highlight-' + alertId + '-' + now, borderHighlightId = highlightId + '-border';
-            console.log(`[TreeRadar] Map Animation: Flashing highlight for alert ${alertId} (${feature.properties.event})`);
+            console.log(`[TreeRadar] Map State: Highlighting geographic bounds for ${alertId} (${feature.properties.event})`);
             map.addSource(highlightId, { 'type': 'geojson', 'data': feature });
             const bw = feature.properties.borderWidth || (feature.properties.geometryType === 'polygon' ? 2 : 1);
             map.addLayer({ 'id': highlightId, 'type': 'fill', 'source': highlightId, 'paint': { 'fill-opacity': 0, 'fill-opacity-transition': { duration: 450 } } });
@@ -988,18 +993,18 @@
 
         function flyToAlert(feature) {
             if (!feature || !feature.geometry || !feature.geometry.coordinates) return;
-            console.log(`[TreeRadar] Map Navigation: Flying to alert bounds for ${feature.properties.id}`);
+            console.log(`[TreeRadar] Camera: Repositioning view for alert ${feature.properties.id}`);
             const bounds = new maplibregl.LngLatBounds();
             try {
                 const processCoords = (coords) => { for(const coord of coords) { if (Array.isArray(coord[0])) processCoords(coord); else bounds.extend(coord); } };
                 processCoords(feature.geometry.coordinates);
                 if (bounds.getNorthEast() && bounds.getSouthWest()) { map.fitBounds(bounds, { padding: 150, essential: true }); map.once('moveend', () => flashAlertOnMap(feature, 6000)); }
-            } catch(e) { console.error("[TreeRadar] Bounds error:", e); }
+            } catch(e) { console.error("[TreeRadar] Bounds calculation error:", e); }
         }
 
         function createAndShowAlertPopup(feature, source) {
             const props = feature.properties, params = props.parameters || {}, container = document.getElementById('alert-popup-container'), popup = document.createElement('div');
-            console.log(`[TreeRadar] Alert UI: Creating fly-in popup for ${props.id} (${props.event})`);
+            console.log(`[TreeRadar] Alert UI: Deploying info card for ${props.event} (${props.id})`);
             popup.className = 'alert-popup'; popup.addEventListener('contextmenu', disableContextMenu);
             const specificAlertName = props.specificEventName, baseEvent = props.event, accentColor = props.displayColor || '#808080';
             let title = (source === 'new' && props.messageType === 'Update' ? 'Updated - ' : '') + specificAlertName, detailsHTML = '<div>';
@@ -1021,40 +1026,37 @@
 
         function displayNextAlert() { 
             if (isDisplayingAlert || alertQueue.length === 0 || !alertsEnabled) {
-                console.debug(`[TreeRadar] Queue: Skipping next alert display. Busy=${isDisplayingAlert}, Size=${alertQueue.length}`);
-                return;
-            } 
+                console.debug(`[TreeRadar] Queue Controller: No action. Busy=${isDisplayingAlert}, Count=${alertQueue.length}`);
+                return; 
+            }
             const nextItem = alertQueue[0];
             if (nextItem.feature.properties.geometryType === 'zone' && !zoneAlertsEnabled) {
-                console.log(`[TreeRadar] Queue: Filtering out zone alert ${nextItem.feature.properties.id}`);
+                console.log(`[TreeRadar] Queue Controller: Suppressing zone notification per user settings - ${nextItem.feature.properties.id}`);
                 alertQueue.shift(); 
                 displayNextAlert();
                 return;
             }
-            console.log(`[TreeRadar] Queue: Displaying ${nextItem.feature.properties.id}. Remaining: ${alertQueue.length - 1}`);
+            console.log(`[TreeRadar] Queue Controller: Moving ${nextItem.feature.properties.id} to display. ${alertQueue.length - 1} remain in buffer.`);
             isDisplayingAlert = true; 
             const { feature } = alertQueue.shift(); 
             flashAlertOnMap(feature, 10000); 
             createAndShowAlertPopup(feature, 'new'); 
         }
 
-        function addNewAlertsToQueue(features, type) { 
-            if (!features || !alertsEnabled) return; 
-            features.forEach(f => { 
-                if (!seenAlerts.has(f.properties.id)) { 
-                    seenAlerts.add(f.properties.id); 
-                    if (!isInitialLoad) {
-                        console.log(`[TreeRadar] Queue: New alert detected - ${f.properties.id}`);
-                        alertQueue.push({ feature: f, type }); 
-                    }
-                } 
-            }); 
-            if (!isInitialLoad) displayNextAlert(); 
+        function addNewAlertToQueue(feature, type, isSilent = false) { 
+            const id = feature.properties.id;
+            if (!seenAlerts.has(id)) { 
+                seenAlerts.add(id); 
+                if (!isInitialLoad && !isSilent && alertsEnabled) {
+                    console.log(`[TreeRadar] Alert Registry: New entry detected - ${id} (${feature.properties.event})`);
+                    alertQueue.push({ feature, type }); 
+                }
+            } 
+            if (!isInitialLoad && !isSilent && alertsEnabled) displayNextAlert(); 
         }
 
-        async function processRawAlertFeatures(raw) {
-            if (!alertsEnabled) return;
-            console.log(`[TreeRadar] Data: Processing ${raw.length} incoming alert features.`);
+        async function processRawAlertFeatures(raw, isSilent = false) {
+            console.log(`[TreeRadar] Pipeline: Analyzing batch of ${raw.length} features. SilentMode=${isSilent}`);
             const valid = raw.filter(isValidAlert), poly = [], zone = [];
             valid.forEach(f => { 
                 f.properties.specificEventName = getSpecificAlertName(f.properties); 
@@ -1063,10 +1065,11 @@
                 f.properties.borderWidth = getAlertBorderWidth(f.properties, isPoly);
                 if (isPoly) { f.properties.geometryType = 'polygon'; poly.push(f); } else zone.push(f); 
             });
+            console.log(`[TreeRadar] Pipeline: Resolved batch into ${poly.length} polygons and ${zone.length} zones.`);
             if (map.getSource('alerts-poly')) map.getSource('alerts-poly').setData({ type: 'FeatureCollection', features: poly });
-            globalPolyAlerts = poly; addNewAlertsToQueue(poly, 'alert'); 
+            globalPolyAlerts = poly; poly.forEach(f => addNewAlertToQueue(f, 'alert', isSilent));
             if (zoneAlertsEnabled) {
-                await processZoneAlerts(zone);
+                await processZoneAlerts(zone, isSilent);
             } else {
                 if (map.getSource('alerts-zone')) map.getSource('alerts-zone').setData({ type: 'FeatureCollection', features: [] });
                 globalZoneAlerts = [];
@@ -1075,47 +1078,45 @@
 
         function handleDebugUpload(e) {
             const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
-            console.log(`[TreeRadar] Debug: Reading manual file upload: ${file.name}`);
+            console.log(`[TreeRadar] Debug: Importing GeoJSON - ${file.name}`);
             reader.onload = async (ev) => {
                 try {
                     const data = JSON.parse(ev.target.result); if (!data.features) throw new Error(); if (updateIntervalId) clearInterval(updateIntervalId); isInitialLoad = false;
                     data.features.forEach(f => { if (!f.properties.id) f.properties.id = "debug_" + Math.random().toString(36).substr(2, 9); });
-                    console.log(`[TreeRadar] Debug: Injecting ${data.features.length} features into pipeline.`);
+                    console.log(`[TreeRadar] Debug: Pushing ${data.features.length} manual features to active pipeline.`);
                     await processRawAlertFeatures(data.features); const firstPoly = data.features.find(f => f.geometry); if (firstPoly) flyToAlert(firstPoly);
-                } catch (err) { console.error("[TreeRadar] Debug upload fail:", err); alert("Error parsing GeoJSON."); }
+                } catch (err) { console.error("[TreeRadar] Debug upload failure:", err); alert("Error parsing GeoJSON."); }
             }; reader.readAsText(file);
         }
 
         function updateMosaicVisibility() {
             const mosaicOn = document.getElementById('radar-toggle').checked, siteActive = map.getLayer(layerIds.singleSiteRadar);
-            const targetVisibility = siteActive ? 'none' : (mosaicOn ? 'visible' : 'none');
-            console.debug(`[TreeRadar] Layer Logic: Mosaic layer visibility set to ${targetVisibility}`);
-            if (map.getLayer(layerIds.radar)) map.setLayoutProperty(layerIds.radar, 'visibility', targetVisibility);
+            const targetVis = siteActive ? 'none' : (mosaicOn ? 'visible' : 'none');
+            console.debug(`[TreeRadar] View Logic: Mosaic visibility engine set state to ${targetVis}`);
+            if (map.getLayer(layerIds.radar)) map.setLayoutProperty(layerIds.radar, 'visibility', targetVis);
         }
 
         function removeSingleSiteLayer() { 
-            console.log("[TreeRadar] Map State: Cleaning up SingleSite radar layers.");
+            console.log("[TreeRadar] View Logic: Releasing SingleSite radar assets.");
             if (map.getLayer(layerIds.singleSiteRadar)) map.removeLayer(layerIds.singleSiteRadar); if (map.getSource('single-site-radar-source')) map.removeSource('single-site-radar-source'); document.getElementById('radar-info-pill').style.display = 'none'; 
         }
 
         function closeAllPopups() { 
-            console.debug("[TreeRadar] UI Clean: Dismissing all active map popups.");
+            console.debug("[TreeRadar] UI Logic: Clearing all existing map popups.");
             const popups = document.querySelectorAll('.maplibregl-popup'); popups.forEach(p => p.remove()); currentMapPopup = null; currentStackedAlertsOnMap = []; currentStackedAlertIndex = 0; document.getElementById('full-alert-text-popup-overlay').style.display = 'none'; 
         }
 
         function toggleRadarProduct(stationId, productCode) {
             const togglingOff = activeSiteIdForData === stationId && activeRadarProductCode === productCode;
-            console.log(`[TreeRadar] SingleSite: Requesting ${stationId} with product ${productCode}. Toggling off? ${togglingOff}`);
+            console.log(`[TreeRadar] SingleSite: Requesting ${stationId} Product ${productCode}. Toggling off? ${togglingOff}`);
             removeSingleSiteLayer();
-            if (togglingOff) { 
-                activeRadarProductCode = null; activeSiteIdForData = null; map.setPaintProperty(layerIds.radarSites, 'circle-color', radarSiteDefaultColor); 
-            }
+            if (togglingOff) { activeRadarProductCode = null; activeSiteIdForData = null; map.setPaintProperty(layerIds.radarSites, 'circle-color', radarSiteDefaultColor); }
             else {
                 activeRadarProductCode = productCode; activeSiteIdForData = stationId;
                 const tileUrl = `https://opengeo.ncep.noaa.gov/geoserver/${stationId}/ows?service=WMS&version=1.3.0&request=GetMap&layers=${stationId}_${productCode}&styles=&format=image/png&transparent=true&width=256&height=256&crs=EPSG:3857&bbox={bbox-epsg-3857}&_=${new Date().getTime()}`;
                 map.addSource('single-site-radar-source', { 'type': 'raster', 'tiles': [tileUrl], 'tileSize': 256, 'attribution': 'NOAA' });
                 map.addLayer({ 'id': layerIds.singleSiteRadar, 'type': 'raster', 'source': 'single-site-radar-source', 'paint': {} }, layerIds.alertsZone); 
-                map.setPaintProperty(layerIds.radarSites, 'circle-color', ['case', ['==', ['get', 'id'], stationId.toUpperCase()], '#00ff00', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080']);
+                map.setPaintProperty(layerIds.radarSites, 'circle-color', ['case', ['==', ['get', 'id'], stationId.toUpperCase()], '#00ff00', ['==', ['get', 'statusError'], true], '#8800FF', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080']);
                 updateRadarPillUI(stationId, productCode);
             }
             updateMosaicVisibility(); if (window.saveCurrentState) window.saveCurrentState();
@@ -1127,51 +1128,82 @@
             pillProd.innerText = label; document.getElementById('radar-info-pill').style.display = 'flex';
         }
 
-        async function updateAlerts() { 
-            if (!alertsEnabled) return;
-            console.debug("[TreeRadar] Fetch: Refreshing NWS alerts...");
+        async function updateAlerts(isSilent = false) { 
+            console.debug(`[TreeRadar] Network: Fetching active NWS alerts. Silent=${isSilent}`);
             try { 
                 const response = await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert,update'); 
                 const data = await response.json(); 
-                console.log(`[TreeRadar] Fetch Success: Received ${data.features.length} alerts.`);
-                await processRawAlertFeatures(data.features); 
-                if (isInitialLoad) isInitialLoad = false; 
-            } catch (e) { console.error("[TreeRadar] Alert Fetch Failure:", e); } 
+                await processRawAlertFeatures(data.features, isSilent); 
+                if (isInitialLoad) {
+                    console.log("[TreeRadar] Lifecycle: Alerts synchronized and monitoring started.");
+                    isInitialLoad = false;
+                }
+            } catch (e) { console.error("[TreeRadar] Network: Alert fetch cycle failure:", e); } 
         }
 
-        async function processZoneAlerts(features) {
-            console.debug(`[TreeRadar] Processing ${features.length} zone alerts for geocoding.`);
+        async function processZoneAlerts(features, isSilent = false) {
+            console.debug(`[TreeRadar] GeoEngine: Processing geometry for ${features.length} zones.`);
             const promises = features.map(async (f) => {
                 const props = f.properties; let alertGeometries = [];
                 if (props.geocode && props.geocode.UGC) {
                     for (const ugc of props.geocode.UGC) {
-                        if (ugcGeoCache.has(ugc)) { const cached = ugcGeoCache.get(ugc); if (cached) { if (cached.type === 'Polygon') alertGeometries.push(cached.coordinates); else if (cached.type === 'MultiPolygon') alertGeometries.push(...cached.coordinates); } continue; }
-                        const type = ugc.charAt(2).toUpperCase() === 'C' ? 'county' : 'forecast';
-                        try { const res = await fetch(`https://api.weather.gov/zones/${type}/${ugc}`); const data = await res.json(); if (data.geometry) { ugcGeoCache.set(ugc, data.geometry); if (data.geometry.type === 'Polygon') alertGeometries.push(data.geometry.coordinates); else if (data.geometry.type === 'MultiPolygon') alertGeometries.push(...data.geometry.coordinates); } else ugcGeoCache.set(ugc, null); } catch (e) { ugcGeoCache.set(ugc, null); }
+                        let method = ugc.charAt(2).toUpperCase() === 'C' ? 'county' : 'forecast';
+                        console.log(`[TreeRadar] Zone Fetch: Initial attempt for ${ugc} using ${method} method.`);
+                        try { 
+                            let res = await fetch(`https://api.weather.gov/zones/${method}/${ugc}`); 
+                            if (!res.ok && res.status === 404) {
+                                let retryMethod = (method === 'county' ? 'forecast' : 'county');
+                                console.warn(`[TreeRadar] Zone Recovery: ${method} failed with 404 for ${ugc}. Retrying via ${retryMethod}.`);
+                                res = await fetch(`https://api.weather.gov/zones/${retryMethod}/${ugc}`);
+                            }
+                            if (!res.ok) throw new Error(`Status ${res.status}`);
+                            const data = await res.json(); 
+                            if (data.geometry) { 
+                                console.log(`[TreeRadar] Zone Success: Geometry resolved for ${ugc}.`);
+                                if (data.geometry.type === 'Polygon') alertGeometries.push(data.geometry.coordinates); 
+                                else if (data.geometry.type === 'MultiPolygon') alertGeometries.push(...data.geometry.coordinates); 
+                            }
+                        } catch (e) { console.error(`[TreeRadar] Zone Failure: Could not locate geometry for ${ugc}.`); }
                     }
                 }
                 if (alertGeometries.length === 0 && props.geocode && props.geocode.SAME) { props.geocode.SAME.forEach(s => { const county = countyDataMap.get(s.substring(1)); if (county && county.geometry) { if (county.geometry.type === 'Polygon') alertGeometries.push(county.geometry.coordinates); else if (county.geometry.type === 'MultiPolygon') alertGeometries.push(...county.geometry.coordinates); } }); }
-                return alertGeometries.length > 0 ? { type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: alertGeometries }, properties: { ...props, geometryType: 'zone' } } : null;
+                if (alertGeometries.length > 0) {
+                    const feature = { type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: alertGeometries }, properties: { ...props, geometryType: 'zone' } };
+                    addNewAlertToQueue(feature, 'alert', isSilent);
+                    return feature;
+                }
+                return null;
             });
             const resolved = (await Promise.all(promises)).filter(Boolean);
             if (map.getSource('alerts-zone')) map.getSource('alerts-zone').setData({ type: 'FeatureCollection', features: resolved });
-            globalZoneAlerts = resolved; addNewAlertsToQueue(resolved, 'alert');
+            globalZoneAlerts = resolved;
         }
 
         async function checkRadarStatus() {
-            console.debug("[TreeRadar] Status: Checking station latencies...");
+            console.debug("[TreeRadar] Status: Verifying station level-2 receipt timestamps.");
             const now = Date.now(), twenty = now - 1200000; let changed = false, updated = [...allRadarSitesData];
             for (let i = 0; i < updated.length; i++) {
                 const site = updated[i], radarId = site.properties.id;
                 try {
-                    const res = await fetch(`https://api.weather.gov/radar/stations/${radarId}`), data = await res.json(), lastTime = data.properties.latency?.levelTwoLastReceivedTime;
+                    const res = await fetch(`https://api.weather.gov/radar/stations/${radarId}`);
+                    if (!res.ok) throw new Error(); 
+                    const data = await res.json(), lastTime = data.properties.latency?.levelTwoLastReceivedTime;
                     let offline = lastTime ? (new Date(lastTime).getTime() < twenty) : true;
-                    if (site.properties.isOffline !== offline) { updated[i] = { ...site, properties: { ...site.properties, isOffline: offline } }; changed = true; }
-                } catch (e) { if (!site.properties.isOffline) { updated[i] = { ...site, properties: { ...site.properties, isOffline: true } }; changed = true; } }
+                    if (site.properties.isOffline !== offline || site.properties.statusError !== false) { 
+                        updated[i] = { ...site, properties: { ...site.properties, isOffline: offline, statusError: false } }; 
+                        changed = true; 
+                    }
+                } catch (e) { 
+                    if (site.properties.statusError !== true) {
+                        console.warn(`[TreeRadar] Status: Metadata fetch error for ${radarId}. Marking status as unknown.`);
+                        updated[i] = { ...site, properties: { ...site.properties, statusError: true, isOffline: false } }; 
+                        changed = true; 
+                    }
+                }
             }
             allRadarSitesData = updated; 
             if (changed && map.getSource('radar-sites')) {
-                console.log("[TreeRadar] Status: Radar station availability changed.");
+                console.log("[TreeRadar] Status: Radar availability change detected. Updating map icons.");
                 map.getSource('radar-sites').setData({ type: 'FeatureCollection', features: allRadarSitesData });
                 if (activeSiteIdForData) map.setPaintProperty(layerIds.radarSites, 'circle-color', ['case', ['==', ['get', 'id'], activeSiteIdForData.toUpperCase()], '#00ff00', ...radarSiteDefaultColor.slice(1)]);
                 else map.setPaintProperty(layerIds.radarSites, 'circle-color', radarSiteDefaultColor);
@@ -1190,39 +1222,35 @@
 
         function updateRadar() { 
             if (map.getSource('weather-radar')) {
-                const timestamp = new Date().getTime();
-                console.debug("[TreeRadar] Mosaic: Refreshing tiles via XYZ endpoint.");
-                map.getSource('weather-radar').setTiles([`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?_=${timestamp}`]); 
+                const ts = new Date().getTime();
+                console.debug("[TreeRadar] Network: Fetching refreshed mosaic tile descriptors.");
+                map.getSource('weather-radar').setTiles([`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png?_=${ts}`]); 
             }
         }
         function updateSingleSiteRadar() { if (map.getSource('single-site-radar-source') && activeSiteIdForData && activeRadarProductCode) { const url = `https://opengeo.ncep.noaa.gov/geoserver/${activeSiteIdForData}/ows?service=WMS&version=1.3.0&request=GetMap&layers=${activeSiteIdForData}_${activeRadarProductCode}&styles=&format=image/png&transparent=true&width=256&height=256&crs=EPSG:3857&bbox={bbox-epsg-3857}&_=${new Date().getTime()}`; map.getSource('single-site-radar-source').setTiles([url]); } }
         async function updateSpcOutlooks() { for (const s of spcSources) { if (map.getSource(s.id)) { try { const res = await fetch(`${s.url}?t=${new Date().getTime()}`), data = await res.json(); map.getSource(s.id).setData(data); } catch (e) {} } } }
 
         async function setupMapData() {
-            console.log("[TreeRadar] Map Setup: Initializing GeoJSON sources and raster layers.");
+            console.log("[TreeRadar] Setup: Preparing sources and protocol layer stack.");
             if (countyDataMap.size === 0) { 
                 try { 
-                    const res = await fetch('https://raw.githubusercontent.com/12treesarecool34/treewarn/main/counties-simplified.json'), data = await res.json(); 
+                    const res = await fetch('https://raw.githubusercontent.com/12treesarecool34/treewarn/main/counties-simplified.json');
+                    const data = await res.json(); 
                     data.features.forEach(c => countyDataMap.set(c.properties.FIPS, c)); 
-                    console.log("[TreeRadar] Map Setup: FIPS County data loaded.");
-                } catch (e) { console.error("[TreeRadar] Critical data fetch fail:", e); return; } 
+                    console.log("[TreeRadar] Setup: Geography data indexed.");
+                } catch (e) { console.error("[TreeRadar] Setup: Fatal error fetching geography data.", e); return; } 
             }
             let symbolId; for (const l of map.getStyle().layers) { if (l.type === 'symbol') { symbolId = l.id; break; } }
             spcSources.forEach(s => { if (!map.getSource(s.id)) map.addSource(s.id, { type: 'geojson', data: s.url }); });
             
             if (!map.getSource('weather-radar')) {
-                console.log("[TreeRadar] Map Setup: Creating Mosaic source using XYZ protocol.");
-                map.addSource('weather-radar', { 
-                    'type': 'raster', 
-                    'tiles': [`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png`], 
-                    'tileSize': 256,
-                    'scheme': 'xyz'
-                });
+                console.log("[TreeRadar] Setup: Enabling IEM Radar Mosaic XYZ mapping.");
+                map.addSource('weather-radar', { 'type': 'raster', 'tiles': [`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{z}/{x}/{y}.png`], 'tileSize': 256, 'scheme': 'xyz' });
             }
 
             if (!map.getSource('alerts-poly')) map.addSource('alerts-poly', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
             if (!map.getSource('alerts-zone')) map.addSource('alerts-zone', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-            if (allRadarSitesData.length === 0) { const res = await fetch('https://api.weather.gov/radar/stations?stationType=WSR-88D,TDWR'), data = await res.json(); allRadarSitesData = data.features.map(f => ({ ...f, properties: { ...f.properties, isOffline: false } })); }
+            if (allRadarSitesData.length === 0) { const res = await fetch('https://api.weather.gov/radar/stations?stationType=WSR-88D,TDWR'), data = await res.json(); allRadarSitesData = data.features.map(f => ({ ...f, properties: { ...f.properties, isOffline: false, statusError: false } })); }
             if (!map.getSource('radar-sites')) map.addSource('radar-sites', { type: 'geojson', data: { type: 'FeatureCollection', features: allRadarSitesData } });
             
             const colorExp = ['coalesce', ['get', 'displayColor'], '#808080'];
@@ -1240,14 +1268,14 @@
             if (!map.getLayer(layerIds.radarSites)) map.addLayer({ id: layerIds.radarSites, type: 'circle', source: 'radar-sites', paint: { 'circle-radius': 4, 'circle-stroke-color': 'white', 'circle-stroke-width': 1.5, 'circle-color': radarSiteDefaultColor }, layout: { 'visibility': document.getElementById('radar-sites-toggle').checked ? 'visible' : 'none' } });
         }
 
-        function toggleAllAlerts() {
+        async function toggleAllAlerts() {
             alertsEnabled = !alertsEnabled;
-            console.log(`[TreeRadar] Master Toggle: Alerts set to ${alertsEnabled}`);
+            console.log(`[TreeRadar] Control Logic: Global alerts state toggled to ${alertsEnabled}`);
             if (window.saveCurrentState) window.saveCurrentState();
             
             if (alertsEnabled) {
                 showToast("Alerts: On");
-                updateAlerts(); 
+                await updateAlerts(true); 
             } else {
                 showToast("Alerts: Off");
                 if (map.getSource('alerts-poly')) map.getSource('alerts-poly').setData({ type: 'FeatureCollection', features: [] });
@@ -1274,7 +1302,7 @@
         function formatSpcLabel(val) { if (!val) return 'N/A'; if (!isNaN(val)) return parseFloat(val) < 1 ? (parseFloat(val) * 100) + "%" : val + "%"; const m = { 'TSTM': 'General Thunderstorms', 'MRGL': 'Marginal', 'SLGT': 'Slight', 'ENH': 'Enhanced', 'MDT': 'Moderate', 'HIGH': 'High' }; return m[val.toUpperCase()] || val; }
         
         function showAlertMapPopup(items, clicked) {
-            console.log(`[TreeRadar] Map Popup: Showing stack of ${items.length} items.`);
+            console.log(`[TreeRadar] UI Logic: Map interaction stack: ${items.length} items.`);
             closeAllPopups(); currentStackedAlertsOnMap = items; currentStackedAlertIndex = 0; const div = document.createElement('div'); div.className = 'map-popup-base map-alert-popup-accent-top'; 
             const update = () => {
                 const item = currentStackedAlertsOnMap[currentStackedAlertIndex]; if (!item) { closeAllPopups(); return; }
@@ -1300,33 +1328,17 @@
 
         async function showFullAlertTextPopup(f) {
             const props = f.properties, overlay = document.getElementById('full-alert-text-popup-overlay'), rgba = hexToRgba(props.displayColor || '#808080', 0.5), el = document.getElementById('full-alert-text-popup');
-            console.log(`[TreeRadar] FullText: Displaying NWS bulletin for ${props.id}`);
             el.style.borderLeft = el.style.borderTop = el.style.borderRight = `5px solid ${rgba}`;
-
             const formattedDescription = formatNwsText(props.description);
             const formattedInstruction = formatNwsText(props.instruction);
-            
             let isWatch = (props.event === 'Tornado Watch' || props.event === 'Severe Thunderstorm Watch');
             let watchNumber = null;
             if (isWatch && props.parameters && props.parameters.VTEC && props.parameters.VTEC[0]) {
                 const vtecParts = props.parameters.VTEC[0].split('.');
                 if (vtecParts.length >= 6) { watchNumber = vtecParts[5]; }
             }
-
-            document.getElementById('full-alert-text-content').innerHTML = `
-                <h4>${props.specificEventName || props.event}</h4>
-                <p><strong>Sent:</strong> ${new Date(props.sent).toLocaleString()}</p>
-                <p><strong>Expires:</strong> ${new Date(props.expires).toLocaleString()}</p>
-                <p><strong>Affected:</strong> ${props.areaDesc}</p>
-                <p>&nbsp;</p>
-                <p><strong>Description:</strong></p>
-                <div id="alert-description-container">
-                    <p>${watchNumber ? 'Loading...' : formattedDescription}</p>
-                </div>
-                ${props.instruction ? `<p>&nbsp;</p><p><strong>Instructions:</strong></p><p>${formattedInstruction}</p>` : ''}
-            `;
+            document.getElementById('full-alert-text-content').innerHTML = `<h4>${props.specificEventName || props.event}</h4><p><strong>Sent:</strong> ${new Date(props.sent).toLocaleString()}</p><p><strong>Expires:</strong> ${new Date(props.expires).toLocaleString()}</p><p><strong>Affected:</strong> ${props.areaDesc}</p><p>&nbsp;</p><p><strong>Description:</strong></p><div id="alert-description-container"><p>${watchNumber ? 'Loading...' : formattedDescription}</p></div>${props.instruction ? `<p>&nbsp;</p><p><strong>Instructions:</strong></p><p>${formattedInstruction}</p>` : ''}`;
             overlay.style.display = 'flex'; 
-
             if (watchNumber) {
                 try {
                     const url = `https://www.spc.noaa.gov/products/watch/ww${watchNumber}.html`;
@@ -1334,20 +1346,13 @@
                     const html = await res.text();
                     const pre = new DOMParser().parseFromString(html, 'text/html').querySelector('pre');
                     const spcText = pre ? pre.textContent : null;
-                    if (spcText) {
-                        document.getElementById('alert-description-container').innerHTML = `<p>${formatNwsText(spcText)}</p>`;
-                    } else {
-                        document.getElementById('alert-description-container').innerHTML = `<p>${formattedDescription}</p>`;
-                    }
-                } catch (e) {
-                    document.getElementById('alert-description-container').innerHTML = `<p>${formattedDescription}</p>`;
-                }
+                    if (spcText) { document.getElementById('alert-description-container').innerHTML = `<p>${formatNwsText(spcText)}</p>`; } else { document.getElementById('alert-description-container').innerHTML = `<p>${formattedDescription}</p>`; }
+                } catch (e) { document.getElementById('alert-description-container').innerHTML = `<p>${formattedDescription}</p>`; }
             }
         }
 
         async function showFullSpcTextPopup(item) {
             const overlay = document.getElementById('full-alert-text-popup-overlay'), el = document.getElementById('full-alert-text-popup'), rgba = hexToRgba(item.properties.fill || '#FFFFFF', 0.5);
-            console.log(`[TreeRadar] FullText: Fetching SPC discussion for Day ${activeSpcDay}`);
             el.style.borderLeft = el.style.borderTop = el.style.borderRight = `5px solid ${rgba}`;
             document.getElementById('full-alert-text-content').innerHTML = `<h4>SPC Day ${activeSpcDay} Discussion</h4><p>Loading...</p>`;
             overlay.style.display = 'flex'; 
@@ -1358,7 +1363,6 @@
         function handleOutlookShortcut(day) {
             const types = outlookTypes[day]; if (!types) return;
             let next = (activeSpcDay === day) ? types[(types.indexOf(activeSpcType) + 1) % types.length] : types[0];
-            console.log(`[TreeRadar] Shortcut: Cycling outlook - Day ${day}, Product ${next}`);
             activeSpcDay = day; activeSpcType = next; updateSpcLayerVisibility(); if (window.saveCurrentState) window.saveCurrentState();
             showToast(`Outlook: Day ${day} ${typeLabels[next]}`);
         }
@@ -1366,7 +1370,6 @@
         const outlookTypes = { '1': ['cat', 'torn', 'hail', 'wind'], '2': ['cat', 'torn', 'hail', 'wind'], '3': ['cat', 'prob'], '4': ['prob'], '5': ['prob'], '6': ['prob'], '7': ['prob'], '8': ['prob'] }, typeLabels = { 'cat': 'Categorical', 'torn': 'Tornado', 'wind': 'Wind', 'hail': 'Hail', 'prob': 'Prob.' };
         
         map.on('load', async () => {
-            console.log("[TreeRadar] Map Loaded. Attaching runtime intervals.");
             await setupMapData(); updateSpcLayerVisibility(); geocodeAndPlaceMarker(); checkRadarStatus();
             if (activeSiteIdForData && activeRadarProductCode) { const s = activeSiteIdForData, p = activeRadarProductCode; activeSiteIdForData = activeRadarProductCode = null; toggleRadarProduct(s, p); }
             setInterval(checkRadarStatus, 300000); updateAlerts(); updateIntervalId = setInterval(updateAlerts, 60000); 
@@ -1382,17 +1385,13 @@
                 });
                 if (nearest) {
                     const id = nearest.properties.id.toLowerCase(), type = nearest.properties.stationType;
-                    console.log(`[TreeRadar] Intercept: Nearest station for context click - ${id}`);
                     let prod;
                     if (activeRadarProductCode) {
                         if (activeRadarProductCode.includes('vel')) prod = (type === 'TDWR' ? 'bvel' : 'sr_bvel');
                         else if (activeRadarProductCode === 'brefl') prod = (type === 'TDWR' ? 'brefl' : 'sr_bref');
                         else prod = (type === 'TDWR' ? 'bref1' : 'sr_bref');
                     } else prod = (type === 'TDWR' ? 'bref1' : 'sr_bref');
-                    if (flyToRadarSetting) {
-                        map.flyTo({ center: nearest.geometry.coordinates, zoom: 7, essential: true });
-                        if (activeSiteIdForData !== id) toggleRadarProduct(id, prod);
-                    } else toggleRadarProduct(id, prod);
+                    if (flyToRadarSetting) { map.flyTo({ center: nearest.geometry.coordinates, zoom: 7, essential: true }); if (activeSiteIdForData !== id) toggleRadarProduct(id, prod); } else toggleRadarProduct(id, prod);
                 }
             });
         });
@@ -1427,7 +1426,6 @@
 
         document.addEventListener('keydown', (e) => {
             if (!e.shiftKey) return;
-            console.debug(`[TreeRadar] Hotkey: Shift + ${e.code}`);
             if (e.code === 'KeyA') { toggleAllAlerts(); return; }
             const keys = { 'KeyM': ['sidebar-mosaic-btn', 'radar-toggle', 'Mosaic'], 'KeyS': ['sidebar-sites-btn', 'radar-sites-toggle', 'Sites'] };
             if (keys[e.code]) { document.getElementById(keys[e.code][0]).click(); const chk = document.getElementById(keys[e.code][1]); showToast(`${keys[e.code][2]}: ${chk.checked ? 'On' : 'Off'}`); }
