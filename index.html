@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- TreeRadar v6.4.1 (Feb 21, 2026) -->
+<!-- TreeRadar v7.0.0 (Feb 22, 2026) -->
 <html>
 <head>
     <title>TreeRadar</title>
@@ -595,6 +595,9 @@
                     <button class="sidebar-menu-item sidebar-submenu-item site-select-option" data-value="TDWR">
                         <div class="sidebar-item-content">TDWR</div>
                     </button>
+                    <button class="sidebar-menu-item sidebar-submenu-item site-select-option" data-value="None" style="display: none;">
+                        <div class="sidebar-item-content">None</div>
+                    </button>
                 </div>
                 <button class="settings-item" id="fly-settings-btn">
                     <div class="sidebar-item-content">
@@ -704,6 +707,8 @@
         let flyToRadarSetting = false;
         let zoneAlertsEnabled = true;
         let alertsEnabled = true; 
+        let saveSettingsEnabled = false;
+        let urlRadarRequest = null;
         const radarSiteDefaultColor = ['case', ['==', ['get', 'statusError'], true], '#8800FF', ['==', ['get', 'isOffline'], true], '#ff0000', ['==', ['get', 'stationType'], 'WSR-88D'], '#0099ff', ['==', ['get', 'stationType'], 'TDWR'], '#ff9900', '#808080'];
         
         document.addEventListener('DOMContentLoaded', () => {
@@ -721,40 +726,96 @@
             const radarToggle = document.getElementById('radar-toggle');
             const sitesToggle = document.getElementById('radar-sites-toggle');
             
-            if (localStorage.getItem('debugMode') === 'true') {
-                debugModeEnabled = true;
-                debugSettingsToggleUI.classList.add('active');
-                Logger.info('Setting loaded: Debug mode initialized as true from local storage.');
-            }
-
-            const savedSettingsState = localStorage.getItem('saveSettings');
-            if (savedSettingsState === 'true') {
+            saveSettingsEnabled = localStorage.getItem('saveSettings') === 'true';
+            if (saveSettingsEnabled) {
                 Logger.debug('DOMContentLoaded', 'Restoring saved settings state.');
-                saveSettingsToggleUI.classList.add('active');
+                if (localStorage.getItem('debugMode') === 'true') debugModeEnabled = true;
                 if (localStorage.getItem('radarVisible') === 'false') radarToggle.checked = false;
                 if (localStorage.getItem('sitesVisible') === 'false') sitesToggle.checked = false;
                 if (localStorage.getItem('alertsVisible') === 'false') alertsEnabled = false;
                 activeSpcDay = localStorage.getItem('activeSpcDay') || 'none';
                 activeSpcType = localStorage.getItem('activeSpcType') || 'none';
-                activeSiteIdForData = localStorage.getItem('activeSiteId');
-                activeRadarProductCode = localStorage.getItem('activeProduct');
+                activeSiteIdForData = localStorage.getItem('activeSiteId') || null;
+                activeRadarProductCode = localStorage.getItem('activeProduct') || null;
                 radarSiteSelectionMode = localStorage.getItem('siteSelection') || 'Both';
                 flyToRadarSetting = localStorage.getItem('flyToRadar') === 'true';
-
-                if (localStorage.getItem('zoneAlertsVisible') === 'false') {
-                    zoneAlertsEnabled = false;
-                    zoneAlertsToggleUI.classList.remove('active');
-                } else {
-                    zoneAlertsEnabled = true;
-                    zoneAlertsToggleUI.classList.add('active');
-                }
-            } else {
-                Logger.debug('DOMContentLoaded', 'No saved settings found. Using defaults.');
-                zoneAlertsEnabled = true;
-                zoneAlertsToggleUI.classList.add('active');
+                if (localStorage.getItem('zoneAlertsVisible') === 'false') zoneAlertsEnabled = false;
             }
 
-            if (flyToRadarSetting) flySettingsToggleUI.classList.add('active');
+            const urlParams = new URLSearchParams(window.location.search);
+            const sParam = urlParams.get('s');
+            let overrodeSaveSettings = null;
+
+            if (sParam) {
+                const flags = sParam.toLowerCase().split(',');
+                Logger.info('URL configuration parameters detected', { flags });
+                
+                flags.forEach(flag => {
+                    Logger.debug('parseUrlParams', 'Processing flag', { flag });
+                    switch(flag) {
+                        case 'ssb': radarSiteSelectionMode = 'Both'; break;
+                        case 'ssw': radarSiteSelectionMode = 'WSR-88D'; break;
+                        case 'sst': radarSiteSelectionMode = 'TDWR'; break;
+                        case 'xss': radarSiteSelectionMode = 'None'; break;
+                        case 'ftr': flyToRadarSetting = true; break;
+                        case 'xfr': flyToRadarSetting = false; break;
+                        case 'zna': zoneAlertsEnabled = true; break;
+                        case 'xza': zoneAlertsEnabled = false; break;
+                        case 'dbg': debugModeEnabled = true; break;
+                        case 'xdb': debugModeEnabled = false; break;
+                        case 'sav': overrodeSaveSettings = true; break;
+                        case 'xsv': overrodeSaveSettings = false; break;
+                        case 'd1c': activeSpcDay = '1'; activeSpcType = 'cat'; break;
+                        case 'd1t': activeSpcDay = '1'; activeSpcType = 'torn'; break;
+                        case 'd1h': activeSpcDay = '1'; activeSpcType = 'hail'; break;
+                        case 'd1w': activeSpcDay = '1'; activeSpcType = 'wind'; break;
+                        case 'd2c': activeSpcDay = '2'; activeSpcType = 'cat'; break;
+                        case 'd2t': activeSpcDay = '2'; activeSpcType = 'torn'; break;
+                        case 'd2h': activeSpcDay = '2'; activeSpcType = 'hail'; break;
+                        case 'd2w': activeSpcDay = '2'; activeSpcType = 'wind'; break;
+                        case 'd3c': activeSpcDay = '3'; activeSpcType = 'cat'; break;
+                        case 'd3p': activeSpcDay = '3'; activeSpcType = 'prob'; break;
+                        case 'd4p': activeSpcDay = '4'; activeSpcType = 'prob'; break;
+                        case 'd5p': activeSpcDay = '5'; activeSpcType = 'prob'; break;
+                        case 'd6p': activeSpcDay = '6'; activeSpcType = 'prob'; break;
+                        case 'd7p': activeSpcDay = '7'; activeSpcType = 'prob'; break;
+                        case 'd8p': activeSpcDay = '8'; activeSpcType = 'prob'; break;
+                        case 'xlk': activeSpcDay = 'none'; activeSpcType = 'none'; break;
+                        case 'irm': radarToggle.checked = true; break;
+                        case 'xrm': radarToggle.checked = false; break;
+                        case 'alt': alertsEnabled = true; break;
+                        case 'xal': alertsEnabled = false; break;
+                        case 'sit': sitesToggle.checked = true; break;
+                        case 'xrs': sitesToggle.checked = false; break;
+                        default:
+                            if (flag.length === 5 && (flag.startsWith('r') || flag.startsWith('v') || flag.startsWith('l'))) {
+                                urlRadarRequest = { id: flag.substring(1), type: flag.charAt(0) };
+                            } else {
+                                Logger.debug('parseUrlParams', 'Unknown or malformed flag encountered', { flag });
+                            }
+                            break;
+                    }
+                });
+                
+                if (overrodeSaveSettings === true) {
+                    saveSettingsEnabled = true;
+                    localStorage.setItem('saveSettings', 'true');
+                } else if (overrodeSaveSettings === false) {
+                    saveSettingsEnabled = false;
+                    localStorage.setItem('saveSettings', 'false');
+                }
+            }
+
+            if (saveSettingsEnabled) saveSettingsToggleUI.classList.add('active'); else saveSettingsToggleUI.classList.remove('active');
+            if (debugModeEnabled) debugSettingsToggleUI.classList.add('active'); else debugSettingsToggleUI.classList.remove('active');
+            if (flyToRadarSetting) flySettingsToggleUI.classList.add('active'); else flySettingsToggleUI.classList.remove('active');
+            if (zoneAlertsEnabled) zoneAlertsToggleUI.classList.add('active'); else zoneAlertsToggleUI.classList.remove('active');
+            
+            const siteSelectOptions = document.querySelectorAll('.site-select-option');
+            siteSelectOptions.forEach(opt => { 
+                if (opt.dataset.value === radarSiteSelectionMode) opt.style.background = 'rgba(255, 255, 255, 0.2)'; 
+                else opt.style.background = 'transparent';
+            });
 
             function saveCurrentState() {
                 Logger.debug('saveCurrentState', 'Evaluating local storage saving', { allowed: localStorage.getItem('saveSettings') === 'true' });
@@ -862,8 +923,6 @@
             settingsCloseBtn.addEventListener('click', () => { Logger.debug('settingsCloseBtn.click', 'Closing settings overlay'); settingsOverlay.style.display = 'none'; });
             settingsOverlay.addEventListener('click', (e) => { if (e.target === settingsOverlay) { Logger.debug('settingsOverlay.click', 'Closing settings overlay via background tap'); settingsOverlay.style.display = 'none'; } });
 
-            const siteSelectOptions = document.querySelectorAll('.site-select-option');
-            siteSelectOptions.forEach(opt => { if(opt.dataset.value === radarSiteSelectionMode) opt.style.background = 'rgba(255, 255, 255, 0.2)'; });
             siteSelectOptions.forEach(option => {
                 option.addEventListener('click', () => {
                     radarSiteSelectionMode = option.dataset.value;
@@ -905,6 +964,8 @@
             
             const attributionBubble = document.getElementById('attribution-bubble');
             attributionBubble.addEventListener('click', (event) => { Logger.debug('attributionBubble.click', 'Toggled attribution bubble visibility'); event.stopPropagation(); attributionBubble.classList.toggle('expanded'); });
+            
+            if (saveSettingsEnabled && urlParams.get('s')) { saveCurrentState(); }
         });
 
         const map = new maplibregl.Map({
@@ -920,7 +981,6 @@
             spc: { day1: { cat: 'spc-day1-cat', torn: 'spc-day1-torn', hail: 'spc-day1-hail', wind: 'spc-day1-wind' }, day2: { cat: 'spc-day2-cat', torn: 'spc-day2-torn', hail: 'spc-day2-hail', wind: 'spc-day2-wind' }, day3: { cat: 'spc-day3-cat', prob: 'spc-day3-prob' }, day4: { prob: 'spc-day4-prob' }, day5: { prob: 'spc-day5-prob' }, day6: { prob: 'spc-day6-prob' }, day7: { prob: 'spc-day7-prob' }, day8: { prob: 'spc-day8-prob' } }
         };
 
-        let countyDataMap = new Map();
         let currentMapPopup = null; 
         let allRadarSitesData = []; 
         let currentStackedAlertsOnMap = []; 
@@ -1272,15 +1332,6 @@
             features.forEach(f => {
                 const alertId = f.properties.id;
                 const geoms = featureGeometryMap.get(alertId) || [];
-                if (geoms.length === 0 && f.properties.geocode && f.properties.geocode.SAME) {
-                    f.properties.geocode.SAME.forEach(s => {
-                        const county = countyDataMap.get(s.substring(1));
-                        if (county && county.geometry) {
-                            if (county.geometry.type === 'Polygon') geoms.push(county.geometry.coordinates);
-                            else if (county.geometry.type === 'MultiPolygon') geoms.push(...county.geometry.coordinates);
-                        }
-                    });
-                }
                 if (geoms.length > 0) {
                     const finalFeature = { type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: geoms }, properties: { ...f.properties, geometryType: 'zone' } };
                     resolvedFeatures.push(finalFeature);
@@ -1377,14 +1428,6 @@
         async function setupMapData() {
             Logger.info('Initializing major Map Data elements');
             Logger.debug('setupMapData', 'Adding sources, variables, and geometries');
-            if (countyDataMap.size === 0) { 
-                try { 
-                    const res = await fetch('https://raw.githubusercontent.com/12treesarecool34/treewarn/main/counties-simplified.json');
-                    const data = await res.json(); 
-                    data.features.forEach(c => countyDataMap.set(c.properties.FIPS, c)); 
-                    Logger.debug('setupMapData', 'County geometries successfully loaded');
-                } catch (e) { Logger.error('setupMapData', e, { component: 'county geometries' }); return; } 
-            }
             let symbolId; for (const l of map.getStyle().layers) { if (l.type === 'symbol') { symbolId = l.id; break; } }
             
             spcSources.forEach(s => { 
@@ -1547,6 +1590,7 @@
         map.on('load', async () => {
             Logger.info('MapLibre GL map base successfully loaded');
             Logger.debug('map.on(load)', 'Initializing map load sequence tasks');
+            
             await setupMapData(); 
             updateSpcLayerVisibility(); 
             updateSpcOutlooks(); 
@@ -1554,6 +1598,21 @@
             checkRadarStatus();
             
             let willFlyToRadar = false;
+
+            if (urlRadarRequest) {
+                const reqId = urlRadarRequest.id.toLowerCase();
+                const site = allRadarSitesData.find(s => s.properties.id.toLowerCase() === reqId);
+                if (site) {
+                    const stType = site.properties.stationType;
+                    if (urlRadarRequest.type === 'r') activeRadarProductCode = (stType === 'TDWR' ? 'bref1' : 'sr_bref');
+                    else if (urlRadarRequest.type === 'v') activeRadarProductCode = (stType === 'TDWR' ? 'bvel' : 'sr_bvel');
+                    else if (urlRadarRequest.type === 'l') activeRadarProductCode = (stType === 'TDWR' ? 'brefl' : 'sr_bref');
+                    activeSiteIdForData = reqId;
+                    Logger.info('URL radar parameter evaluated and successfully applied', { site: reqId, product: activeRadarProductCode });
+                } else {
+                    Logger.error('URL radar param', new Error('Radar site not found in database'), { requestedId: reqId });
+                }
+            }
 
             if (activeSiteIdForData && activeRadarProductCode) { 
                 const s = activeSiteIdForData, p = activeRadarProductCode; 
@@ -1564,13 +1623,13 @@
                     const site = allRadarSitesData.find(site => site.properties.id.toLowerCase() === s);
                     if (site) {
                         willFlyToRadar = true;
-                        Logger.debug('map.on(load)', 'Flying to previously selected radar site', { radarId: s });
+                        Logger.debug('map.on(load)', 'Flying to initialized radar site', { radarId: s });
                         map.flyTo({ center: site.geometry.coordinates, zoom: 7, essential: true });
                     }
                 }
             }
 
-            if (!willFlyToRadar && localStorage.getItem('saveSettings') === 'true') {
+            if (!willFlyToRadar && saveSettingsEnabled) {
                 const savedZoom = localStorage.getItem('lastZoom');
                 const savedCenter = localStorage.getItem('lastCenter');
                 if (savedZoom && savedCenter) {
@@ -1594,7 +1653,7 @@
             setInterval(updateSingleSiteRadar, 60000);
             
             map.on('moveend', () => {
-                if (localStorage.getItem('saveSettings') === 'true') {
+                if (saveSettingsEnabled) {
                     localStorage.setItem('lastZoom', map.getZoom());
                     localStorage.setItem('lastCenter', JSON.stringify(map.getCenter()));
                     Logger.debug('map.moveend', 'Saved current zoom and center', { zoom: map.getZoom(), center: map.getCenter() });
@@ -1674,8 +1733,6 @@
                     Logger.info('Shift+U pressed, opening debug file filepicker');
                     document.getElementById('debug-file-input').click();
                     showToast("Upload Debug File");
-                } else {
-                    Logger.debug('document.keydown', 'Shift+U pressed but debug mode is inactive');
                 }
                 return;
             }
